@@ -2,52 +2,86 @@
 #include <string>
 #include <cstring>
 #include <vector>
-#include <string.h>
-/// NU UITA SA BAGI SI BOOL
+#include <algorithm>
 
 class Driver;
 class Team{
 
-        const int teamCount;
-        static int idTeam;
+        const int idTeam;
+        static int teamCount;
         char *teamName;
         int championshipsNumber;
         int* championshipsYears;
         float points;
-        double budget;
         int raceWins;
-        // std::vector<Driver> drivers;
+        // std::vector<Driver*> drivers;
     public:
-        static int getIdTeam(){return Team::idTeam;}
+        static int getTeamCount(){return Team::teamCount;}
+        const int getIdTeam(){return this->idTeam;}
         const char* getTeamName(){return this->teamName;}
-        const int* getChampionshipsYears(){return this->championshipsYears;}
+        const int getChampionshipsNumber(){return this->championshipsNumber;}
+        const int* getChampionshipsYears() const{return this->championshipsYears;}
         const float getPoints(){return this->points;}
-        void setPoints(float points){this -> points = points;}
-        void setBudget(double budget){this -> budget = budget;}
-        void setRaceWins(int raceWins){this -> raceWins = raceWins;}
+        const int getRaceWins(){return this->raceWins;}
         // std::vector<Driver> getDrivers(){return this->drivers;} PANA DEFINESC CLASA DRIVERS LE LAS COMENTATE
+        void setTeamName(char *teamName){this->teamName = new char[strlen(teamName)+1]; strcpy(this->teamName, teamName);}
+        void setChampionshipsYears(int championshipsNumber, int* championshipsYears);
+        void setPoints(float points){this -> points = points;}
+        void setRaceWins(int raceWins){this -> raceWins = raceWins;}
+        // void setDrivers(std::vector<Driver> drivers){this->drivers = drivers;}
+        
         Team();
-        Team(char* teamName, int championshipsNumber, int* championshipsYears, float points, double budget, int raceWins);
+        Team(char* teamName, int championshipsNumber, int* championshipsYears, float points, int raceWins);
         // Team(char* teamName, int championshipsNumber, int* championshipsYears, float points, double budget, int raceWins, const std::vector<Driver>& drivers);
         Team(const Team& obj);
-        ~Team();
         Team& operator =(const Team& obj);
+        ~Team();
+
         friend std::ostream& operator <<(std::ostream& out, const Team& team);
         friend std::istream& operator >>(std::istream& in, Team& team);
-};
-int Team::idTeam = 1000;
+        Team operator +(int);
+        friend Team operator +(int, Team);
+        Team operator +(const Team& obj); // concatenates the team names, adds the points, racewins and championshipsYears together
+        Team& operator++(); // increases race wins
+        Team operator++(int); 
+        Team& operator--(); // decreases race wins
+        Team operator--(int);
+        bool operator<(const Team& obj) const;
+        bool operator<=(const Team& obj) const;
+        bool operator==(const Team& obj);
+        bool operator>(const Team& obj) const;
+        bool operator>=(const Team& obj) const;
+        int operator [](int);
 
-Team::Team():teamCount(idTeam++){
+        std::string toString() const;
+        operator std::string();
+        operator std::string() const;
+};
+int Team::teamCount = 1000;
+
+void Team::setChampionshipsYears(int championshipsNumber, int* championshipsYears)
+{
+    if(this->championshipsYears != NULL)
+    {
+        delete[] this->championshipsYears;
+        this->championshipsYears = NULL;
+    }
+    this->championshipsNumber = championshipsNumber;
+    this->championshipsYears = new int[championshipsNumber];
+    for(int i = 0; i < this->championshipsNumber; ++i)
+        this->championshipsYears[i] = championshipsYears[i];
+}
+
+Team::Team():idTeam(teamCount++){
     teamName = new char[strlen("Unknown") + 1];
     strcpy(teamName, "Unknown");
     championshipsNumber = 0;
     championshipsYears = nullptr;
     points = 0;
-    budget = 0;
     raceWins = 0;
 }
 
-Team::Team(char* teamName, int championshipsNumber, int* championshipsYears, float points, double budget, int raceWins):teamCount(idTeam++){
+Team::Team(char* teamName, int championshipsNumber, int* championshipsYears, float points, int raceWins):idTeam(teamCount++){
     this -> teamName = new char[strlen(teamName) + 1];
     strcpy(this -> teamName, teamName);
     this -> championshipsNumber = championshipsNumber;
@@ -55,11 +89,10 @@ Team::Team(char* teamName, int championshipsNumber, int* championshipsYears, flo
     for(int i = 0; i < championshipsNumber; i++)
         this -> championshipsYears[i] = championshipsYears[i];
     this -> points = points;
-    this -> budget = budget;
     this -> raceWins = raceWins;
 }
 
-/*Team::Team(char* teamName, int championshipsNumber, int* championshipsYears, float points, double budget, int raceWins, const std::vector<Driver>& drivers):teamCount(idTeam++)
+/*Team::Team(char* teamName, int championshipsNumber, int* championshipsYears, float points, int raceWins, const std::vector<Driver>& drivers):teamCount(idTeam++)
 {
     this -> teamName = new char[strlen(teamName) + 1];
     strcpy(this -> teamName, teamName);
@@ -73,7 +106,7 @@ Team::Team(char* teamName, int championshipsNumber, int* championshipsYears, flo
     this -> drivers = drivers;
 }*/
 
-Team::Team(const Team& obj):teamCount(idTeam++){
+Team::Team(const Team& obj):idTeam(teamCount++){
     this -> teamName = new char[strlen(obj.teamName) + 1];
     strcpy(this -> teamName, obj.teamName);
     this -> championshipsNumber = obj.championshipsNumber;
@@ -81,12 +114,12 @@ Team::Team(const Team& obj):teamCount(idTeam++){
     for(int i = 0; i < obj.championshipsNumber; i++)
         this -> championshipsYears[i] = obj.championshipsYears[i];
     this -> points = obj.points;
-    this -> budget = obj.budget;
     this -> raceWins = obj.raceWins;
     // this -> drivers = obj.drivers;
 }
 
 Team::~Team(){
+    teamCount--;
     if(this -> teamName != NULL)
     {
         delete[] this -> teamName;
@@ -118,19 +151,17 @@ Team& Team::operator =(const Team& obj){
         for(int i = 0; i < obj.championshipsNumber; i++)
             this -> championshipsYears[i] = obj.championshipsYears[i];
         this -> points = obj.points;
-        this -> budget = obj.budget;
         this -> raceWins = obj.raceWins;
         // this -> drivers = obj.drivers;
     }
     return *this;
 }
 
-std::ostream& operator<<(std::ostream& out, const Team& team)
+std::ostream& operator <<(std::ostream& out, const Team& team)
 {
     out << "Team id: " << team.idTeam << '\n';
     out << "Team name: " << team.teamName << "\n";
     out << "Team points: " << team.points << "\n";
-    out << "Team budget: " << team.budget << "\n";
     out << "Team raceWins: " << team.raceWins << "\n";
     out << "Championships: " << team.championshipsNumber << "\n";
     if(team.championshipsNumber > 0)
@@ -147,8 +178,8 @@ std::ostream& operator<<(std::ostream& out, const Team& team)
 std::istream& operator >>(std::istream& in, Team& team)
 {
     std::cout << "Team name: ";
-    char aux[100];
-    in.get(aux, 100);
+    char temp[100];
+    in.get(temp, 100);
     if(team.teamName != NULL)
     {
         delete[] team.teamName;
@@ -157,12 +188,10 @@ std::istream& operator >>(std::istream& in, Team& team)
     {
         delete[] team.championshipsYears;
     }
-    team.teamName = new char[strlen(aux) + 1];
-    strcpy(team.teamName, aux);
+    team.teamName = new char[strlen(temp) + 1];
+    strcpy(team.teamName, temp);
     std::cout << "Team points: ";
     in >> team.points;
-    std::cout << "Team budget: ";
-    in >> team.budget;
     std::cout << "Race wins: ";
     in >> team.raceWins;
     std::cout << "Number of championships: ";
@@ -179,21 +208,137 @@ std::istream& operator >>(std::istream& in, Team& team)
     return in;
 }
 
+Team Team::operator+(int points)
+{
+    Team temp(*this);
+    temp.points = temp.points + points;
+    return temp;
+}
+
+Team operator+(int points, Team obj)
+{
+    Team temp(obj);
+    temp.points = temp.points + points;
+    return temp;
+}
+
+Team Team::operator+(const Team& obj)
+{
+    Team temp(*this);
+    if(temp.teamName != NULL)
+    {
+        delete[] temp.teamName;
+        temp.teamName = NULL;
+    }
+    if(temp.championshipsYears != NULL)
+    {
+        delete[] temp.championshipsYears;
+        temp.championshipsYears = NULL;
+    }
+    temp.teamName = new char[strlen(this->teamName) + strlen(obj.teamName) + 1];
+    char temp2[strlen(this->teamName) + strlen(obj.teamName) + 1] = "";
+    strcpy(temp2, this->teamName);
+    strcat(temp2, " & ");
+    strcat(temp2, obj.teamName);
+    strcpy(temp.teamName, temp2);
+    temp.championshipsNumber = this->championshipsNumber + obj.championshipsNumber;
+    temp.championshipsYears = new int[temp.championshipsNumber];
+    int i, k = 0;
+    for(i = 0; i < this->championshipsNumber; ++i)
+        temp.championshipsYears[i] = this->championshipsYears[i];
+    for(int j = i; j < temp.championshipsNumber; ++j)
+        temp.championshipsYears[j] = obj.championshipsYears[k++];
+    std::sort(temp.championshipsYears, temp.championshipsYears + temp.championshipsNumber);
+    temp.points = this->points + obj.points;
+    temp.raceWins = this->raceWins + obj.raceWins;        
+    return temp;
+}
+
+Team& Team::operator++(){
+    this->raceWins++;
+    return *this;
+}
+
+Team Team::operator++(int){
+    Team temp(*this);
+    this->raceWins++;
+    return temp;
+}
+
+Team& Team::operator--(){
+    this->raceWins--;
+    return *this;
+}
+
+Team Team::operator--(int){
+    Team temp(*this);
+    this->raceWins--;
+    return temp;
+}
+
+bool Team::operator<(const Team& obj) const{
+    return this->raceWins < obj.raceWins;
+}
+
+bool Team::operator<=(const Team& obj) const{
+    return this->raceWins <= obj.raceWins;
+}
+
+bool Team::operator>(const Team& obj) const{
+    return this->raceWins > obj.raceWins;
+}
+
+bool Team::operator>=(const Team& obj) const{
+    return this->raceWins >= obj.raceWins;
+}
+
+bool Team::operator==(const Team& obj){
+    return this->raceWins == obj.raceWins;
+}
+
+int Team::operator [](int i){
+    if(this->championshipsYears == NULL)
+        throw std::runtime_error("No championships");
+    if(i < 0 || i > this->championshipsNumber)
+        throw std::runtime_error("invalid index");
+    return this->championshipsYears[i];
+}
+
+std::string Team::toString() const{
+    std::string temp = this->teamName;
+    temp += " " + std::to_string(this->championshipsNumber);
+    for(int i = 0; i < this->championshipsNumber; ++i)
+        temp += " " + std::to_string(this->championshipsYears[i]);
+    temp += " " + std::to_string(this->points);
+    temp += " " + std::to_string(raceWins);
+    return temp;
+}
+
+Team::operator std::string(){
+    return this->toString();
+}
+
+Team::operator std::string()const{
+    return this->toString();
+}
+
+class Car;
+
 class Driver{
-        static int driverId;
-        const int driverCount;
+        static int driverCount;
+        const int driverId;
 
         std::string name;
-        std::string birthDate;
         int raceWins;
         int podiumsNumber;
         float points;
         int championshipsWon;
         int* championshipsYears;
-        Team team;
+        Car* car;
     public:
-        static int getDriverId(){return Driver::driverId;}
-        const char* getDriverName(){return this -> name.c_str();}
+        static int getDriverCount(){return Driver::driverCount;}
+        const int getDriverId(){return this->driverId;}
+        const std::string getDriverName(){return this -> name;}
         const int* getChampionshipsYears(){return this -> championshipsYears;}
         const float getPoints(){return this -> points;}
         const int getPodiumsNumber(){return this -> podiumsNumber;}
@@ -201,31 +346,46 @@ class Driver{
         void setPodiumsNumber(int podiumsNumber){this -> podiumsNumber = podiumsNumber;}
         void setRaceWins(int raceWins){this -> raceWins = raceWins;}
         Driver();
-        Driver(std::string name, std::string birthDate, int raceWins, int podiumsNumber, float points, int championshipsWon, int* championshipsYears);
-        Driver(std::string name, std::string birthDate, int raceWins, int podiumsNumber, float points, int championshipsWon, int* championshipsYears,const Team& team);
+        Driver(std::string name, int raceWins, int podiumsNumber, float points, int championshipsWon, int* championshipsYears);
+        Driver(std::string name, int raceWins, int podiumsNumber, float points, int championshipsWon, int* championshipsYears,Car* car);
         Driver(const Driver& obj);
         ~Driver();
         Driver& operator =(const Driver& obj);
         friend std::ostream& operator <<(std::ostream& out, const Driver& driver);
         friend std::istream& operator >>(std::istream& in, Driver& driver);
+        Driver operator +(int);
+        friend Driver operator +(int, Driver);
+        Driver operator +(const Driver& obj); // concatenates the team names, adds the points, racewins and championshipsYears together
+        Driver& operator++(); // increases race wins
+        Driver operator++(int); 
+        Driver& operator--(); // decreases race wins
+        Driver operator--(int);
+        bool operator<(const Driver& obj) const;
+        bool operator<=(const Driver& obj) const;
+        bool operator==(const Driver& obj);
+        bool operator>(const Driver& obj) const;
+        bool operator>=(const Driver& obj) const;
+        int operator [](int);
+
+        std::string toString() const;
+        operator std::string();
+        operator std::string() const;
 };
 
-int Driver::driverId = 10;
+int Driver::driverCount = 10;
 
-Driver::Driver():driverCount(driverId++){
+Driver::Driver():driverId(driverCount++){
     this -> name = "Unknown";
-    this -> birthDate = "Unknown";
     this -> raceWins = 0;
     this -> podiumsNumber = 0;
     this -> points = 0;
     this -> championshipsWon = 0;
     this -> championshipsYears = nullptr;
-    this -> team = {};
+    this -> car = nullptr;
 }
 
-Driver::Driver(std::string name, std::string birthDate, int raceWins, int podiumsNumber, float points, int championshipsWon, int* championshipsYears):driverCount(driverId++){
+Driver::Driver(std::string name, int raceWins, int podiumsNumber, float points, int championshipsWon, int* championshipsYears):driverId(driverCount++){
     this -> name = name;
-    this -> birthDate = birthDate;
     this -> raceWins = raceWins;
     this -> podiumsNumber = podiumsNumber;
     this -> points = points;
@@ -233,12 +393,12 @@ Driver::Driver(std::string name, std::string birthDate, int raceWins, int podium
     this -> championshipsYears = new int[championshipsWon];
     for(int i = 0; i < championshipsWon; ++i)
         this -> championshipsYears[i] = championshipsYears[i];
+    this -> car = nullptr;
 }
 
-Driver::Driver(std::string name, std::string birthDate, int raceWins, int podiumsNumber, float points, int championshipsWon, int* championshipsYears,const Team& team):driverCount(driverId++)
+Driver::Driver(std::string name, int raceWins, int podiumsNumber, float points, int championshipsWon, int* championshipsYears,Car* car):driverId(driverCount++)
 {
     this -> name = name;
-    this -> birthDate = birthDate;
     this -> raceWins = raceWins;
     this -> podiumsNumber = podiumsNumber;
     this -> points = points;
@@ -246,13 +406,12 @@ Driver::Driver(std::string name, std::string birthDate, int raceWins, int podium
     this -> championshipsYears = new int[championshipsWon];
     for(int i = 0; i < championshipsWon; ++i)
         this -> championshipsYears[i] = championshipsYears[i];
-    this -> team = team;
+    this -> car = car;
 }
 
-Driver::Driver(const Driver& obj):driverCount(driverId++)
+Driver::Driver(const Driver& obj):driverId(driverCount++)
 {
     this -> name = obj.name;
-    this -> birthDate = obj.birthDate;
     this -> raceWins = obj.raceWins;
     this -> podiumsNumber = obj.podiumsNumber;
     this -> points = obj.points;
@@ -260,7 +419,7 @@ Driver::Driver(const Driver& obj):driverCount(driverId++)
     this -> championshipsYears = new int[obj.championshipsWon];
     for(int i = 0; i < obj.championshipsWon; ++i)
         this -> championshipsYears[i] = obj.championshipsYears[i];
-    this -> team = obj.team;
+    this -> car = obj.car;
 }
 
 Driver::~Driver()
@@ -281,7 +440,6 @@ Driver& Driver::operator =(const Driver& obj)
             this -> championshipsYears = NULL;
         }
         this -> name = obj.name;
-        this -> birthDate = obj.birthDate;
         this -> raceWins = obj.raceWins;
         this -> podiumsNumber = obj.podiumsNumber;
         this -> points = obj.points;
@@ -289,8 +447,7 @@ Driver& Driver::operator =(const Driver& obj)
         this -> championshipsYears = new int[obj.championshipsWon];
         for(int i = 0; i < obj.championshipsWon; ++i)
             this -> championshipsYears[i] = obj.championshipsYears[i];
-        this -> team = obj.team;
-        // this -> drivers = obj.drivers;
+        this -> car = obj.car;
     }
     return *this;
 }
@@ -299,7 +456,6 @@ std::ostream& operator <<(std::ostream& out, const Driver& driver)
 {
     out << "Driver id: " << driver.driverId << '\n';
     out << "Driver name: " << driver.name << "\n";
-    out << "Driver birth date: " << driver.birthDate << "\n";
     out << "Driver points: " << driver.points << "\n";
     out << "Driver raceWins: " << driver.raceWins << "\n";
     out << "Driver podiums: " << driver.podiumsNumber << '\n';
@@ -310,8 +466,7 @@ std::ostream& operator <<(std::ostream& out, const Driver& driver)
         for(int i = 0; i < driver.championshipsWon-1; ++i) out << driver.championshipsYears[i] << ", ";
         out << driver.championshipsYears[driver.championshipsWon-1] << '\n';
     }
-    out << "\n";
-    // out << "Team: " << driver.team << "\n";
+    // out << "Car: " << driver.car << "\n";
     return out;
 }
 
@@ -321,8 +476,6 @@ std::istream& operator >>(std::istream& in, Driver& driver)
         delete[] driver.championshipsYears;
     std::cout << "Enter driver's name: ";
     getline(in, driver.name);
-    std::cout << "Enter driver's birth date:";    
-    getline(in, driver.birthDate);
     std::cout << "Enter driver's raceWins: ";
     in >> driver.raceWins;
     std::cout << "Enter driver's number of podiums: ";
@@ -334,13 +487,13 @@ std::istream& operator >>(std::istream& in, Driver& driver)
     driver.championshipsYears = new int[driver.championshipsWon];
     for(int i = 0; i < driver.championshipsWon; ++i)
         in >> driver.championshipsYears[i];
-    // in >> driver.team;
+    // in >> driver.car;
     return in;
 }
 
 class Car{
-    static int carId;
-    const int carCount;
+    static int carCount;
+    const int carId;
 
     std::string brand;
     char *model;
@@ -349,7 +502,8 @@ class Car{
     float topSpeed;
 
     public:
-        static int getCarId() { return Car::carId;}
+        static int getCarCount() { return Car::carCount;}
+        const int getCarId(){return this->carId;}
         const char* getBrand() {return this -> brand.c_str();}
         const char* getModel() {return this -> model;}
         const int getReleaseDate() {return this -> releaseDate;}
@@ -370,9 +524,9 @@ class Car{
         friend std::istream& operator>>(std::istream& in, Car& obj);
 };
 
-int Car::carId = 10000;
+int Car::carCount = 10000;
 
-Car::Car():carCount(carId++)
+Car::Car():carId(carCount++)
 {
     this -> brand = "Unknown";
     this -> model = new char[strlen("Unknown")+1];
@@ -382,7 +536,7 @@ Car::Car():carCount(carId++)
     this -> topSpeed = 0;
 }
 
-Car::Car(std::string brand, char* model, int releaseDate, bool broken, float topSpeed):carCount(carId++)
+Car::Car(std::string brand, char* model, int releaseDate, bool broken, float topSpeed):carId(carCount++)
 {
     this -> brand = brand;
     this -> model = new char[strlen(model) + 1];
@@ -392,7 +546,7 @@ Car::Car(std::string brand, char* model, int releaseDate, bool broken, float top
     this -> topSpeed = topSpeed;
 }
 
-Car::Car(const Car& obj):carCount(carId++)
+Car::Car(const Car& obj):carId(carCount++)
 {
     this -> brand = obj.brand;
     this -> model = new char[strlen(obj.model) + 1];
@@ -455,7 +609,7 @@ std::istream& operator >>(std::istream& in,Car& car)
     in >> car.topSpeed;
     return in;
 }
-
+/*
 class Track
 {
     static int trackId;
@@ -574,16 +728,20 @@ std::istream& operator >>(std::istream& in, Track& track)
     in >> track.laps;
     return in;
 }
-
+*/
 void TestTeam()
 {
     Team a;
-    int years[] ={2000, 2002, 2012};
-    char name[] = "Mercedes AMG";
-    Team b(name, 3, years, 42, 13000000, 2);
-    Team c(b), d;
+    int years[] ={2000, 2002, 2012}, years2[] = {1990, 1992, 1994}, years3[] = {};
+    char name[] = "Mercedes AMG", name2[] = "Red Bull", name3[] = "Aston Martin";
+    Team b(name, 3, years, 42, 2), h(name2, 3, years2, 60, 3);
+    Team c(b), d, e(name3, 0, years3, 15, 1), f;
     // std::cin >> d;
-    std::cout << d.getIdTeam();
+    std::string lol;
+    d = 3 + b;
+    f = b + h;
+    lol = b;
+    std::cout << lol;
     // b.setBudget(2140);
     // b.setRaceWins(199);
     // std::cout << b;
@@ -595,12 +753,11 @@ void TestDriver()
     // std::cout << a;
     int years[] ={2000, 2002, 2012};
     char name[] = "Mercedes AMG";
-    Team b(name, 3, years, 42, 13000000, 2);
+    Car b();
     std::string lol = "Max Verstappen";
-    std::string date = "03/09/1988";
     int yea[] = {2020, 2021};
-    Driver c(lol, date, 52, 79, 201, 2, yea, b);
-    std::cin >> a; 
+    Driver c(lol, 52, 79, 201, 2, yea);
+    // std::cin >> a; 
     std::cout << a;
 }
 
@@ -617,12 +774,12 @@ void TestCar()
 void TestTrack()
 {
     char name[] = "Buircrsa";
-    Track a,b(name, 56, 12, "Graphite", 58),c,d;
-    std::cin >> d;
-    std::cout << d;
+    // Track a,b(name, 56, 12, "Graphite", 58),c,d;
+    // std::cin >> d;
+    // std::cout << d;
 }
 
 int main()
 {
-    TestTrack();
+    TestDriver();
 }
