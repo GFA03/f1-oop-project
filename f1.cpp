@@ -31,7 +31,7 @@ class Car{
         int getReleaseDate() const{return this->releaseDate;}
         bool getBroken() const{return this->broken;}
         float getTopSpeed() const{return this->topSpeed;}
-        bool getTaken() const{return this->taken;}
+        bool getTaken() const{if(this == nullptr){ std::cout << "AU"; return 0;} return this->taken;}
 
         void setBrand(const std::string& brand){this->brand = brand;}
         void setModel(char* model);
@@ -320,6 +320,7 @@ class Driver{
         char getType() const{return this->type;}
         float getPoints() const{return this->points;}
         int getPodiumsNumber() const{return this->podiumsNumber;}
+        int getRaceWins() const{return this->raceWins;}
         std::string getDistance() const{return this->distance;}
         const Car* getCar() const{return this->car;}
 
@@ -501,10 +502,14 @@ std::istream& operator >>(std::istream& in, Driver& driver)
     in >> driver.type;
     std::cout << "Enter driver's number of championships won: ";
     in >> driver.championshipsWon;
-    driver.championshipsYears = new int[driver.championshipsWon];
-    std::cout << "Enter the years that the championship has been won:\n";
+    if(driver.championshipsWon == 0)
+        driver.championshipsYears = nullptr;
+    else{
+        driver.championshipsYears = new int[driver.championshipsWon];
+        std::cout << "Enter the years that the championship has been won:\n";
     for(int i = 0; i < driver.championshipsWon; ++i)
         in >> driver.championshipsYears[i];
+    }
     // in >> driver.car;
     return in;
 }
@@ -558,6 +563,8 @@ Driver Driver::operator+(const Driver& driver)
 
 Driver Driver::operator+(Car& car){
     Driver temp(*this);
+    if(temp.car != nullptr)
+        temp.car->setTaken(0);
     temp.car = &car;
     temp.car->setTaken(true);
     return temp;
@@ -570,14 +577,14 @@ Driver Car::operator+(const Driver& driver){
     return temp;
 }
 
-Driver Driver::operator++(int podiumsNumber){
+Driver Driver::operator++(int){
     Driver temp(*this);
-    this->podiumsNumber++;
+    this->raceWins++;
     return temp;
 }
 
 Driver& Driver::operator++(){
-    this->podiumsNumber++;
+    this->raceWins++;
     return *this;
 }
 
@@ -863,11 +870,15 @@ std::istream& operator >>(std::istream& in, Team& team)
     in >> team.raceWins;
     std::cout << "Enter number of championships: ";
     in >> team.championshipsNumber;
-    team.championshipsYears = new int[team.championshipsNumber];
-    for(int i = 0; i < team.championshipsNumber; ++i)
-    {
-        std::cout << "Enter championship year " << i+1 <<": ";
-        in >> team.championshipsYears[i];
+    if(team.championshipsNumber == 0)
+        team.championshipsYears = nullptr;
+    else{
+        team.championshipsYears = new int[team.championshipsNumber];
+        for(int i = 0; i < team.championshipsNumber; ++i)
+        {
+            std::cout << "Enter championship year " << i+1 <<": ";
+            in >> team.championshipsYears[i];
+        }
     }
     // std::cout << "Drivers: ";
     // in >> team.drivers;
@@ -1031,6 +1042,17 @@ Team Driver::operator+(const Team& team){
     return temp;
 }
 
+void clear_screen(char fill = ' ') { 
+    COORD tl = {0,0};
+    CONSOLE_SCREEN_BUFFER_INFO s;
+    HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);   
+    GetConsoleScreenBufferInfo(console, &s);
+    DWORD written, cells = s.dwSize.X * s.dwSize.Y;
+    FillConsoleOutputCharacter(console, fill, cells, tl, &written);
+    FillConsoleOutputAttribute(console, s.wAttributes, cells, tl, &written);
+    SetConsoleCursorPosition(console, tl);
+}
+
 class Race{
     static int raceCount;
     const int raceId;
@@ -1105,7 +1127,6 @@ bool Race::removeDriver(Driver* driver){
 
 std::string putBlank(std::string temp)
 {
-    srand(time(NULL));
     for(int i = 0; i < rand()%5+1; ++i)
         temp += " ";
     return temp;
@@ -1136,19 +1157,24 @@ bool Race::startRace(){
     if(this->driverList.size() < 2)
         return false;
     bool running = true;
+    srand(time(NULL));
     while(running){
         clear_screen();
+        this->printRace();
+        Sleep(200);
         for(int i = 0; i < this->driverList.size(); ++i)
         {
             if(this->driverList[i]->getDistance().length() >= this->laps)
             {
                 this->setWinner(this->driverList[i]);
-                return true;
+                this->driverList[i]->setRaceWins(this->driverList[i]->getRaceWins() + 1);
+                running = false;
             }
         }
-        this->printRace();
-        Sleep(200);
     }
+    for(int i = 0; i < this->driverList.size(); ++i)
+        this->driverList[i]->setDistance("");
+    return true;
 }
 
 Race::Race():raceId(raceCount++){
@@ -1194,6 +1220,8 @@ std::istream& operator>>(std::istream& in, Race& obj)
 {
     std::cout << "Enter number of laps: ";
     in >> obj.laps;
+    obj.driverList = {};
+    obj.winner = nullptr;
     return in;
 }
 
@@ -1319,17 +1347,6 @@ Race::operator std::string() const{
     return this->toString();
 }
 
-void clear_screen(char fill = ' ') { 
-    COORD tl = {0,0};
-    CONSOLE_SCREEN_BUFFER_INFO s;
-    HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);   
-    GetConsoleScreenBufferInfo(console, &s);
-    DWORD written, cells = s.dwSize.X * s.dwSize.Y;
-    FillConsoleOutputCharacter(console, fill, cells, tl, &written);
-    FillConsoleOutputAttribute(console, s.wAttributes, cells, tl, &written);
-    SetConsoleCursorPosition(console, tl);
-}
-
 class Menu{
     std::deque<Driver> drivers;
     std::deque<Car> cars;
@@ -1339,7 +1356,6 @@ class Menu{
     bool loadedData = false;
 public:
     void run();
-    // void defaultData();
 
     Car* getCar(int id);
     Driver* getDriver(int id);
@@ -1359,38 +1375,6 @@ public:
     bool removeDriver(int id);
     bool removeTeam(int id);
 };
-
-// void Menu::defaultData()
-// {
-//     if(this->loadedData == true)
-//         return;
-//     this->loadedData = true;
-//     char model[] = "Performance";
-//     std::string carBrand1 = "Mercedes AMG", carBrand2 = "Red Bull", carBrand3 = "Aston Martin";
-//     char brand1[] = "Mercedes AMG", brand2[] = "Red Bull", brand3[] = "Aston Martin";
-//     std::string driverName1 = "Max Verstappen", driverName2 = "Lewis Hamilton", driverName3 = "Sergio Perez", driverName4 = "Lance Stroll";
-//     Car car1(carBrand1, model, 2023, 420);
-//     Car car2(carBrand2, model, 2000, 200);
-//     Car car3(carBrand3, model, 2008, 368);
-//     int years[] = {1998, 1999, 2000}, years1[] = {2004, 2007}, years2[] = {2000, 2017};
-//     Driver driver1(driverName1, 10, 12, 34.2, 'P', 2, years1);
-//     Driver driver2(driverName2, 3, 3, 40, 'P', 2, years2);
-//     Driver driver3(driverName4, 0, 2, 40, 'P', 3, years);
-//     Team team1(brand2, 3, years, 42, 2), team2(brand3, 2, years2, 60, 3);
-//     this->cars.push_back(car1);
-//     this->cars.push_back(car2);
-//     this->cars.push_back(car3);
-//     this->drivers.push_back(driver1);
-//     this->drivers.push_back(driver2);
-//     this->drivers.push_back(driver3);
-//     this->teams.push_back(team1);
-//     this->teams.push_back(team2);
-//     this->drivers[0].setCar(&this->cars[0]);
-//     this->drivers[1].setCar(&this->cars[1]);
-//     this->drivers[2].setCar(&this->cars[2]);
-//     this->teams[0].addDriver(&this->drivers[0]);
-//     this->teams[1].addDriver(&this->drivers[1]);
-// }
 
 Car* Menu::getCar(int id){
     Car* car = nullptr;
@@ -1450,10 +1434,12 @@ bool Menu::removeDriver(int id){
                 for(int k = 0; k < this->teams[j].getDrivers().size(); ++k)
                     if(this->teams[j].getDrivers()[k] == getDriver(id))
                         this->teams[j].getDrivers()[k] = nullptr;
-            if(this->drivers[i].getCar()->getTaken() == 1)
-                for(int l = 0; l < this->cars.size(); ++l)
-                    if(this->drivers[i].getCar() == &this->cars[l])
-                        this->cars[l].setTaken(0);
+
+            if(this->drivers[i].getCar() != nullptr)
+                if(this->drivers[i].getCar()->getTaken() == 1)
+                    for(int j = 0; j < this->cars.size(); ++j)
+                        if(this->drivers[i].getCar() == &this->cars[j])
+                            this->cars[j].setTaken(0);
             this->drivers.erase(this->drivers.begin() + i);
             return true;
         }
@@ -2107,6 +2093,8 @@ void Menu::raceMenu()
             case 7:{
                 clear_screen();
                 this->race.startRace();
+                clear_screen();
+                std::cout << "The WINNER is: " << this->race.getWinner()->getDriverName() << "\n";
                 break;
             }
         }
