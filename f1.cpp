@@ -1148,7 +1148,7 @@ void Race::printRace(){
     }
     for(int i = 0; i < this->driverList.size(); ++i){
         std::cout << addSpaces(this->driverList[i]->getDriverName(), max - this->driverList[i]->getDriverName().length()) << ":";
-        std::cout << this->driverList[i]->getDistance() << "-\n";
+        std::cout << this->driverList[i]->getDistance() << "|-:o:>\n";
         this->driverList[i]->setDistance(putBlank(this->driverList[i]->getDistance()));
     }
 }
