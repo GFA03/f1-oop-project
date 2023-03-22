@@ -207,7 +207,7 @@ Car operator+(float topSpeed, Car car){
     return temp;
 }
 
-Car operator+(float topSpeed, Car car){
+Car operator-(float topSpeed, Car car){
     Car temp(car);
     temp.topSpeed -= topSpeed;
     return temp;
