@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <deque>
 #include <windows.h>
+#include <time.h>
 
 class Team;
 class Driver;
@@ -26,8 +27,8 @@ class Car{
         const int getCarId(){return this->carId;}
 
         std::string getBrand() const{return this->brand;}
-        const char* getModel() const{return this->model;}
-        std::string getCarName(){std::string temp = this->brand + " " + std::string(this->model); return temp;}
+        const char* getModel(){return this->model;}
+        std::string getCarName() const{std::string temp = this->brand + " " + std::string(this->model); return temp;}
         int getReleaseDate() const{return this->releaseDate;}
         bool getBroken() const{return this->broken;}
         float getTopSpeed() const{return this->topSpeed;}
@@ -48,11 +49,13 @@ class Car{
         Car& operator=(const Car& obj);
 
         friend std::ostream& operator<<(std::ostream& out, const Car& obj);
-        friend std::istream& operator>>(std::istream& in, Car& obj);
+        friend std::istream& operator>>(std::istream& in, Car& obj); // we give the address in order to change the data of the object
 
-        Car operator +(float);
-        friend Car operator+(float, Car);
-        Driver operator+(const Driver& driver);
+        Car operator +(float); // increases top speed
+        friend Car operator+(float, Car); 
+        Car operator -(float); // decreases top speed
+        friend Car operator-(float, Car);
+        Driver operator+(const Driver& driver); // adds a car to a driver object
         Car operator +(const Car& obj); // concatenates the car names, adds the top speed together
         Car& operator++(); // increases top speed
         Car operator++(int); 
@@ -192,9 +195,21 @@ Car Car::operator+(float topSpeed){
     return temp;
 }
 
+Car Car::operator-(float topSpeed){
+    Car temp(*this);
+    temp.topSpeed -= topSpeed;
+    return temp;
+}
+
 Car operator+(float topSpeed, Car car){
     Car temp(car);
     temp.topSpeed += topSpeed;
+    return temp;
+}
+
+Car operator+(float topSpeed, Car car){
+    Car temp(car);
+    temp.topSpeed -= topSpeed;
     return temp;
 }
 
@@ -345,17 +360,19 @@ class Driver{
 
         Driver operator +(float);
         friend Driver operator+(float, Driver);
-        Driver operator+(const Driver& obj); // concatenates the driver names, adds the points, race wins and championships years together
+        Driver operator -(float);
+        friend Driver operator-(float, Driver);
+        Driver operator+(const Driver& obj); // concatenates the driver names, adds the points, race wins and championship years together
         Team operator+(const Team& team); // Adds a driver to the team;
         Driver operator+(Car& car); // erases the previous car and adds the new one
-        Race operator+(const Race& race); // Adds a driver to the race
+        Race operator+(const Race& race); // Adds a driver to a race
         friend Driver Car::operator+(const Driver& driver);
         Driver& operator++(); // increases podiums number
         Driver operator++(int); 
         Driver& operator--(); // decreases podiums number
         Driver operator--(int);
 
-        bool operator<(const Driver& obj) const;
+        bool operator<(const Driver& obj) const; // compares race wins
         bool operator<=(const Driver& obj) const;
         bool operator==(const Driver& obj);
         bool operator>(const Driver& obj) const;
@@ -528,6 +545,20 @@ Driver operator+(float points, Driver driver)
     return driver;
 }
 
+Driver Driver::operator-(float points)
+{
+    Driver temp(*this);
+    temp.points -= points;
+    return temp;
+}
+
+Driver operator-(float points, Driver driver)
+{
+    Driver temp(driver);
+    temp.points -= points;
+    return driver;
+}
+
 Driver Driver::operator+(const Driver& driver)
 {
     Driver temp(*this);
@@ -688,8 +719,10 @@ class Team{
         friend std::istream& operator >>(std::istream& in, Team& team);
         Team operator +(float);
         friend Team operator +(float, Team);
+        Team operator -(float);
+        friend Team operator -(float, Team);
         friend Team Driver::operator+(const Team& team);
-        Team operator +(const Team& obj); // concatenates the team names, adds the points, racewins and championshipsYears together
+        Team operator +(const Team& obj); // concatenates the team names, adds the points, race wins and championships years together
         Team operator +(Driver& driver);
         Team& operator++(); // increases race wins
         Team operator++(int); 
@@ -901,6 +934,20 @@ Team operator+(float points, Team obj)
     return temp;
 }
 
+Team Team::operator-(float points)
+{
+    Team temp(*this);
+    temp.points = temp.points - points;
+    return temp;
+}
+
+Team operator-(float points, Team obj)
+{
+    Team temp(obj);
+    temp.points = temp.points - points;
+    return temp;
+}
+
 Team Team::operator+(const Team& obj)
 {
     Team temp(*this);
@@ -933,17 +980,6 @@ Team Team::operator+(const Team& obj)
     temp.drivers.insert(temp.drivers.end(), obj.drivers.begin(), obj.drivers.end());
     return temp;
 }
-
-// Team Team::operator +(Driver* driver){
-//     Team temp(*this);
-//     bool duplicate = false;
-//     for(int i = 0; i < temp.drivers.size(); ++i)
-//         if(driver->getDriverId() == temp.drivers[i]->getDriverId())
-//             duplicate = true;
-//     if(duplicate == false)
-//         temp.drivers.push_back(driver);
-//     return temp;
-// }
 
 Team Team::operator +(Driver& driver){
     Team temp(*this);
@@ -1089,6 +1125,8 @@ public:
     friend std::ostream& operator<<(std::ostream& out, const Race& obj);
     Race operator+(int laps);
     friend Race operator+(int laps, Race obj);
+    Race operator-(int laps);
+    friend Race operator-(int laps, Race obj);
     Race operator+(Driver& obj);
     friend Race Driver::operator+(const Race& race);
     Race& operator++();
@@ -1250,6 +1288,18 @@ Race Race::operator+(int laps){
 Race operator+(int laps, Race obj){
     Race temp(obj);
     temp.laps = temp.laps + laps;
+    return temp;
+}
+
+Race Race::operator-(int laps){
+    Race temp(*this);
+    temp.laps = temp.laps - laps;
+    return temp;
+}
+
+Race operator-(int laps, Race obj){
+    Race temp(obj);
+    temp.laps = temp.laps - laps;
     return temp;
 }
 
@@ -1546,12 +1596,11 @@ void Menu::carMenu(){
             }
             case 3:{
                 clear_screen();
-                std::cout << '\n';
                 if(this->cars.size() == 0)
                     std::cout << "No cars yet!\n";
                 else{
                 for(int i = 0; i < this->cars.size(); ++i)
-                    std::cout << '\n' << this->cars[i] << '\n';
+                    std::cout << this->cars[i] << '\n' << '\n';
                 }
                 break;
             }
@@ -1564,7 +1613,7 @@ void Menu::carMenu(){
                 std::cin >> id;
                 clear_screen();
                 if(getCar(id) != nullptr)
-                    std::cout << *getCar(id);
+                    std::cout << *getCar(id) << '\n';
                 else
                     std::cout << "Invalid ID!\n";
                 std::cout << '\n';
@@ -1591,7 +1640,7 @@ void Menu::editCar(int id)
         std::cout << "2 - Set model name\n";
         std::cout << "3 - Set release date(Year)\n";
         std::cout << "4 - Set top speed(Km/h)\n";
-        std::cout << "5 - Delete\n";
+        std::cout << "9 - Delete\n";
         std::cout << "Command: ";
         std::cin >> command;
         switch(command){
@@ -1606,6 +1655,7 @@ void Menu::editCar(int id)
                 std::string brand;
                 std::cin.get();
                 getline(std::cin, brand);
+                clear_screen();
                 car->setBrand(brand);
                 break;
             }
@@ -1618,6 +1668,7 @@ void Menu::editCar(int id)
                 car->setModel(model);
                 clear_screen();
                 std::cout << "Model has been updated!\n";
+                std::cout << '\n';
                 break;
             }
             case 3:{
@@ -1628,6 +1679,7 @@ void Menu::editCar(int id)
                 car->setReleaseDate(year);
                 clear_screen();
                 std::cout << "Release year has been updated!\n";
+                std::cout << '\n';
                 break;
             }
             case 4:{
@@ -1638,16 +1690,18 @@ void Menu::editCar(int id)
                 car->setTopSpeed(speed);
                 clear_screen();
                 std::cout << "Top speed has been updated!\n";
+                std::cout << '\n';
                 break;
             }
-            case 5:{
+            case 9:{
                 clear_screen();
-                std::cout << (this->removeCar(id) ? "Car has been removed succesfully\n" : "Invalid ID!\n");
+                std::cout << (this->removeCar(id) ? "Car has been removed succesfully\n" : "Invalid ID!\n") << '\n';
                 running = false;
                 break;
             }
             default:{
                 std::cout << "Invalid command!\n";
+                std::cout << '\n';
                 break;
             }
             
@@ -1664,6 +1718,7 @@ void Menu::driverMenu(){
         std::cout << "2 - Edit driver(by ID)\n";
         std::cout << "3 - Print all drivers\n";
         std::cout << "4 - Print driver(by ID)\n";
+        std::cout << "5 - Read full stats for driver\n";
         std::cout << "Command: ";
         std::cin >> command;
         switch(command){
@@ -1673,12 +1728,17 @@ void Menu::driverMenu(){
                 break;
             }
             case 1:{
-                Driver driver;
                 clear_screen();
-                std::cin >> driver;
-                this->drivers.push_back(driver);
+                std::cout << "Enter driver's name: ";
+                std::string name;
+                std::cin.get();
+                getline(std::cin, name);
                 clear_screen();
+                Driver temp;
+                temp.setName(name);
+                this->drivers.push_back(temp);
                 std::cout << "Driver has been added!\n";
+                std::cout << '\n';
                 break;
             }
             case 2:{
@@ -1691,17 +1751,16 @@ void Menu::driverMenu(){
                 clear_screen();
                 if(getDriver(id) != nullptr)
                     this->editDriver(id);
-                else std::cout << "INVALID ID\n";
+                else std::cout << "INVALID ID\n" << '\n';
                 break;
             }
             case 3:{
                 clear_screen();
-                std::cout << '\n';
                 if(this->drivers.size() == 0)
-                    std::cout << "No drivers yet!\n";
+                    std::cout << "No drivers yet!\n" << '\n';
                 else{
                     for(int i = 0; i < this->drivers.size(); ++i)
-                        std::cout << '\n' << this->drivers[i] << '\n';
+                        std::cout << this->drivers[i] << '\n' << '\n';
                 }
                 break;
             }
@@ -1717,6 +1776,16 @@ void Menu::driverMenu(){
                     std::cout << *getDriver(id);
                 else
                     std::cout << "Invalid ID!\n";
+                std::cout << '\n' << '\n';
+                break;
+            }
+            case 5:{
+                Driver driver;
+                clear_screen();
+                std::cin >> driver;
+                this->drivers.push_back(driver);
+                clear_screen();
+                std::cout << "Driver has been added!\n";
                 std::cout << '\n';
                 break;
             }
@@ -1759,6 +1828,7 @@ void Menu::editDriver(int id)
                 std::string driverName;
                 std::cin.get();
                 getline(std::cin, driverName);
+                clear_screen();
                 driver->setName(driverName);
                 break;
             }
@@ -1770,6 +1840,7 @@ void Menu::editDriver(int id)
                 driver->setRaceWins(raceWins);
                 clear_screen();
                 std::cout << "Number of race wins has been updated!\n";
+                std::cout << '\n';
                 break;
             }
             case 3:{
@@ -1780,6 +1851,7 @@ void Menu::editDriver(int id)
                 driver->setPodiumsNumber(podiumsNumber);
                 clear_screen();
                 std::cout << "Number of podiums has been updated!\n";
+                std::cout << '\n';
                 break;
             }
             case 4:{
@@ -1790,6 +1862,7 @@ void Menu::editDriver(int id)
                 driver->setPoints(points);
                 clear_screen();
                 std::cout << "Number of points has been updated!\n";
+                std::cout << '\n';
                 break;
             }
             case 5:{
@@ -1800,6 +1873,7 @@ void Menu::editDriver(int id)
                 driver->setType(type);
                 clear_screen();
                 std::cout << "The type has been updated!\n";
+                std::cout << '\n';
                 break;
             }
             case 6:{
@@ -1813,6 +1887,7 @@ void Menu::editDriver(int id)
                 driver->setChampionships(championshipsNumber, championshipsYears);
                 clear_screen();
                 std::cout << "Championships have been updated!\n";
+                std::cout << '\n';
                 break;
             }
             
@@ -1826,20 +1901,24 @@ void Menu::editDriver(int id)
                 int idCar;
                 std::cin >> idCar;
                 driver->setCar(getCar(idCar));
+                clear_screen();
+                std::cout << "Car has been updated!\n";
+                std::cout << '\n';
                 break;
             }
 
             case 9:{
                 clear_screen();
                 if(this->removeDriver(id) == false)
-                    std::cout << "Invalid ID!\n";
+                    std::cout << "Invalid ID!\n" << '\n';
                 else
-                std::cout << "Driver has been removed succesfully!\n";
+                std::cout << "Driver has been removed succesfully!\n" << '\n';
                 running = false;
                 break;
             }
             default:{
                 std::cout << "Invalid command!\n";
+                std::cout << '\n';
                 break;
             }
             
@@ -1871,6 +1950,7 @@ void Menu::teamMenu(){
                 this->teams.push_back(team);
                 clear_screen();
                 std::cout << "Team has been added!\n";
+                std::cout << '\n';
                 break;
             }
             case 2:{
@@ -1883,17 +1963,16 @@ void Menu::teamMenu(){
                 clear_screen();
                 if(getTeam(id) != nullptr)
                     this->editTeam(id);
-                else std::cout << "INVALID ID\n";
+                else std::cout << "INVALID ID\n" << '\n';
                 break;
             }
             case 3:{
                 clear_screen();
-                std::cout << '\n';
                 if(this->teams.size() == 0)
-                    std::cout << "No teams yet!\n";
+                    std::cout << "No teams yet!\n" << '\n';
                 else{
                     for(int i = 0; i < this->teams.size(); ++i)
-                        std::cout << '\n' << this->teams[i] << '\n';
+                        std::cout << this->teams[i] << '\n' << '\n';
                 }
                 break;
             }
@@ -1906,7 +1985,7 @@ void Menu::teamMenu(){
                 std::cin >> id;
                 clear_screen();
                 if(getTeam(id) != nullptr)
-                    std::cout << *getTeam(id);
+                    std::cout << *getTeam(id) << '\n';
                 else
                     std::cout << "Invalid ID!\n";
                 std::cout << '\n';
@@ -1914,6 +1993,7 @@ void Menu::teamMenu(){
             }
             default:{
                 std::cout << "Invalid command!\n";
+                std::cout << '\n';
                 break;
             }
             
@@ -1952,6 +2032,7 @@ void Menu::editTeam(int id)
                 team->setTeamName(driverName);
                 clear_screen();
                 std::cout << "Team name has been changed!\n";
+                std::cout << '\n';
                 break;
             }
             case 2:{
@@ -1962,6 +2043,7 @@ void Menu::editTeam(int id)
                 team->setRaceWins(raceWins);
                 clear_screen();
                 std::cout << "Number of race wins has been updated!\n";
+                std::cout << '\n';
                 break;
             }
             case 3:{
@@ -1972,6 +2054,7 @@ void Menu::editTeam(int id)
                 team->setPoints(points);
                 clear_screen();
                 std::cout << "Number of points has been updated!\n";
+                std::cout << '\n';
                 break;
             }
             case 4:{
@@ -1985,6 +2068,7 @@ void Menu::editTeam(int id)
                 team->setChampionshipsYears(championshipsNumber, championshipsYears);
                 clear_screen();
                 std::cout << "Championships have been updated!\n";
+                std::cout << '\n';
                 break;
             }
             case 5:{
@@ -1995,20 +2079,24 @@ void Menu::editTeam(int id)
                 std::cout << "Id driver: ";
                 int idDriver;
                 std::cin >> idDriver;
+                clear_screen();
                 team->addDriver(getDriver(idDriver));
+                std::cout << "Driver has been added!\n";
+                std::cout << '\n';
                 break;
             }
             case 9:{
                 clear_screen();
                 if(this->removeTeam(id) == false)
-                    std::cout << "Invalid ID!\n";
+                    std::cout << "Invalid ID!\n" << '\n';
                 else
-                std::cout << "Team has been removed succesfully!\n";
+                std::cout << "Team has been removed succesfully!\n" << '\n';
                 running = false;
                 break;
             }
             default:{
                 std::cout << "Invalid command!\n";
+                std::cout << '\n';
                 break;
             }
             
@@ -2035,12 +2123,16 @@ void Menu::raceMenu()
         switch(command){
             case 0:{
                 clear_screen();
+                Race temp;
+                this->race = temp;
                 running = false;
                 break;
             }
             case 1:{
                 clear_screen();
                 this->race.setLaps(200);
+                std::cout << "Race has been initialized!\n";
+                std::cout << '\n';
                 break;
             }
             case 2:{
@@ -2051,9 +2143,12 @@ void Menu::raceMenu()
                 std::cout << "Id = ";
                 std::cin >> id;
                 clear_screen();
-                if(getDriver(id) != nullptr)
+                if(getDriver(id) != nullptr){
                     this->race.addDriver(getDriver(id));
+                    std::cout << "Driver has been added!\n";
+                }
                 else std::cout << "INVALID ID\n";
+                std::cout << '\n';
                 break;
             }
             case 3:{
@@ -2067,17 +2162,20 @@ void Menu::raceMenu()
                 if(getDriver(id) != nullptr)
                     (this->race.removeDriver(getDriver(id))) ? std::cout << "Driver has been removed\n" : std::cout << "Driver has not been found\n";
                 else std::cout << "INVALID ID\n";
+                std::cout << '\n';
                 break;
             }
             case 4:{
                 clear_screen();
                 for(int i = 0; i < this->race.getDriverList().size(); ++i)
                     std::cout << this->race.getDriverList()[i]->getDriverName() << '\n'; 
+                std::cout << '\n';
                 break;
             }
             case 5:{
                 clear_screen();
-                std::cout << this->race;
+                std::cout << this->race << '\n';
+                std::cout << '\n';
                 break;
             }
             case 6:{
@@ -2088,6 +2186,7 @@ void Menu::raceMenu()
                 this->race.setLaps(laps);
                 clear_screen();
                 std::cout << "Number of laps has been changed!\n";
+                std::cout << '\n';
                 break;
             }
             case 7:{
@@ -2095,6 +2194,7 @@ void Menu::raceMenu()
                 this->race.startRace();
                 clear_screen();
                 std::cout << "The WINNER is: " << this->race.getWinner()->getDriverName() << "\n";
+                std::cout << '\n';
                 break;
             }
         }
@@ -2128,80 +2228,63 @@ void TestTeam()
     // std::cout << b;
 }
 
-// void TestDriver()
-// {
-//     Driver a;
-//     // std::cout << a;
-//     int years[] ={2000, 2002, 2012}, years2[] = {2018, 2019};
-//     char name[] = "Performance";
-//     Car b("Mercedes AMG", name, 2023, 420);
-//     Car p("Audi", name, 2000, 200);
-//     Car *d;
-//     std::string lol = "Max Verstappen", pol = "Lewis Hamilton";
-//     int yea[] = {2020, 2021};
-//     Driver h(lol, 10, 12, 34.2, 'P', 2, yea, &b);
-//     Driver L(pol,  3, 3, 40, 'P', 2, years2, &p);
-//     h = p + h;
-//     std::cout << h;
-//     // std::cout << h+L;
-//     // std::cout << p.getCarId();
-//     // std::cin >> a; 
-//     // std::cout << a;
-// }
+void TestDriver()
+{
+    Driver a;
+    // std::cout << a;
+    int years[] ={2000, 2002, 2012}, years2[] = {2018, 2019};
+    char name[] = "Performance";
+    Car b("Mercedes AMG", name, 2023, 420);
+    Car p("Audi", name, 2000, 200);
+    Car *d;
+    std::string lol = "Max Verstappen", pol = "Lewis Hamilton";
+    int yea[] = {2020, 2021};
+    Driver h(lol, 10, 12, 34.2, 'P', 2, yea, &b);
+    Driver L(pol,  3, 3, 40, 'P', 2, years2, &p);
+    h = p + h;
+    std::cout << h;
+    // std::cout << h+L;
+    // std::cout << p.getCarId();
+    // std::cin >> a; 
+    // std::cout << a;
+}
 
-// void TestCar()
-// {
-//     char model[] = "Aventor", model2[] = "TT Coupe";
-//     Car a,b("Lamborghini", model, 2000, 320);
-//     Car c("Audi", model2, 2012, 260), d;
-//     std::cout << a << b << c;
-//     // d = b+c;
-//     // int lro = d;
-//     // bool lro2 = d;
-//     // std :: cin >> d;
-//     // d.setModel(model);
-//     std::cout << b.getCarName();
-// }
+void TestCar()
+{
+    char model[] = "Aventor", model2[] = "TT Coupe";
+    Car a,b("Lamborghini", model, 2000, 320);
+    Car c("Audi", model2, 2012, 260), d;
+    std::cout << a << b << c;
+    // d = b+c;
+    // int lro = d;
+    // bool lro2 = d;
+    // std :: cin >> d;
+    // d.setModel(model);
+    std::cout << b.getCarName();
+}
 
-// void TestRace()
-// {
-//     char brand1[] = "Mercedes AMG", brand2[] = "Red Bull", brand3[] = "Aston Martin";
-//     int yea[] = {2020, 2021}, years[] ={2000, 2002, 2012}, years2[] = {2018, 2019};
-//     char name[] = "Performance";
-//     Car b("Mercedes AMG", name, 2023, 420);
-//     Car p("Audi", name, 2000, 200);   
-//     std::string lol = "Max Verstappen", pol = "Lewis Hamilton";
-//     Driver driver1(lol, 10, 12, 34.2, 'P', 2, yea, &b);
-//     Driver driver2(pol,  3, 3, 40, 'P', 2, years2, &p);
-//     Team team1(brand2, 3, years, 42, 2, {&driver1}), team2(brand3, 2, years2, 60, 3, {&driver2});
-//     Race race1(42, {&driver1});
-//     race1 = driver2 + race1;
-//     // race1.setWinner(&driver2);
-//     std::cout << race1;
-// }
+void TestRace()
+{
+    char brand1[] = "Mercedes AMG", brand2[] = "Red Bull", brand3[] = "Aston Martin";
+    int yea[] = {2020, 2021}, years[] ={2000, 2002, 2012}, years2[] = {2018, 2019};
+    char name[] = "Performance";
+    Car b("Mercedes AMG", name, 2023, 420);
+    Car p("Audi", name, 2000, 200);   
+    std::string lol = "Max Verstappen", pol = "Lewis Hamilton";
+    Driver driver1(lol, 10, 12, 34.2, 'P', 2, yea, &b);
+    Driver driver2(pol,  3, 3, 40, 'P', 2, years2, &p);
+    Team team1(brand2, 3, years, 42, 2, {&driver1}), team2(brand3, 2, years2, 60, 3, {&driver2});
+    Race race1(42, {&driver1});
+    race1 = driver2 + race1;
+    // race1.setWinner(&driver2);
+    std::cout << race1;
+}
 
 int main()
 {
     // TestCar();
     Menu menu;
     menu.run();
-    // int i = 0;
-    // srand(time(NULL));
-    // std::string temp = "", temp2 = "";
-    // std::cout << rand()%5;
-    // while(i < 100){
-        // clear_screen();
-        // std::cout << "Lewis Hamilton: ";
-        // i++;
-        // std::cout << temp;
-        // std::cout << '-';
-        // std::cout << "\nMax Vers: ";
-        // std::cout << temp2;
-        // std::cout << '-';
-        // putBlank(temp);
-        // putBlank(temp2);
-        // Sleep(100);
-    // }
 }
 /*
 class Track
