@@ -207,7 +207,7 @@ Car operator+(float topSpeed, Car car){
     return temp;
 }
 
-Car operator+(float topSpeed, Car car){
+Car operator-(float topSpeed, Car car){
     Car temp(car);
     temp.topSpeed -= topSpeed;
     return temp;
@@ -1216,35 +1216,35 @@ bool Race::startRace(){
 }
 
 Race::Race():raceId(raceCount++){
-    this->setLaps(0);
-    this->setDriverList({});
-    this->setWinner(nullptr);
+    this->laps = 0;
+    this->driverList = {};
+    this->winner = nullptr;
 }
 
 Race::Race(int laps, std::vector<Driver*> driverList):raceId(raceCount++){
-    this->setLaps(laps);
-    this->setDriverList(driverList);
-    this->setWinner(nullptr);
+    this->laps = laps;
+    this->driverList = driverList;
+    this->winner = nullptr;
 }
 
 Race::Race(int laps, std::vector<Driver*> driverList, Driver* winner):raceId(raceCount++){
-    this->setLaps(laps);
-    this->setDriverList(driverList);
-    this->setWinner(winner);
+    this->laps = laps;
+    this->driverList = driverList;
+    this->winner = winner;
 }
 
 Race::Race(const Race& obj):raceId(raceCount++){
-    this->setLaps(obj.laps);
-    this->setDriverList(obj.driverList);
-    this->setWinner(obj.winner);
+    this->laps = obj.laps;
+    this->driverList = obj.driverList;
+    this->winner = obj.winner;
 }
 
 Race& Race::operator=(const Race& obj){
     if(this != &obj)
     {
-        this->setLaps(obj.laps);
-        this->setDriverList(obj.driverList);
-        this->setWinner(obj.winner);
+        this->laps = obj.laps;
+        this->driverList = obj.driverList;
+        this->winner = obj.winner;
     }
     return *this;
 }
